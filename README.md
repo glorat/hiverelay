@@ -2,6 +2,12 @@
 
 Hiverelay - building trusted connections
 
+## Release history
+
+23-Apr-2023
+
+Rome wasn't built in a day. But this POC was. A basic twitter inspired app that supports full proper authentication (email/Google login) to create authenticated public messaging
+
 ## Install the dependencies
 ```bash
 yarn
