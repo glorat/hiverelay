@@ -49,7 +49,7 @@ export function setEmulator(use: boolean) {
 
 }
 
-export function getApp() {
+export function fbGetApp() {
   // Initialize Firebase
   if (!app) {
     app = initializeApp(firebaseConfig, firebaseConfig.projectId);
@@ -109,16 +109,21 @@ export function getApp() {
 }
 
 export function fbGetAuth() {
-  return getAuth(getApp())
+  return getAuth(fbGetApp())
 }
 
 export function fbHasUser(): boolean {
   return !!currentUser
 }
 
+// Would this be better in a store? Try not to call this function in case it moves
+export function fbGetLogin() {
+  return currentUser
+}
+
 export async function fbGetCurrentUser(): Promise<any> {
   if (currentUser) {
-    const db = getFirestore(getApp());
+    const db = getFirestore(fbGetApp());
     const col = collection(db, 'user');
     const userDoc = await getDoc(doc(col, currentUser.uid))
     const ret:any = userDoc.exists() ? {...userDoc.data(), id: userDoc.id} : {id: currentUser.uid}
