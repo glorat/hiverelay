@@ -7,12 +7,58 @@ name: Deploy to Firebase Hosting on merge
     branches:
       - main
 jobs:
-  build_and_deploy:
+  pre_check:
     runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
       - uses: actions/checkout@v2
-      - run: yarn install --frozen-lockfile && yarn run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: yarn.lock
+      - run: yarn install --frozen-lockfile
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v3
+        with:
+          semantic_version: 19.0.5
+          dry_run: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    needs: [ pre_check ]
+    if: needs.pre_check.outputs.new_release_published == 'true'
+    outputs:
+      new_release_published: ${{ needs.pre_check.outputs.new_release_published }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: yarn.lock
+      - run: yarn install --frozen-lockfile
+
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v3
+        with:
+          semantic_version: 19.0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set package.json version
+        run: npm version ${{ steps.semantic.outputs.new_release_version }} --no-git-tag-version
+      - run: yarn run build
+      - name: Determine version
+        run: echo "SOURCE_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+      - name: Determine version
+        run: echo "Deploying version $SOURCE_VERSION"
+               - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_HIVERELAYNET }}'
